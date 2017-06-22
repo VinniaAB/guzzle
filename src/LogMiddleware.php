@@ -29,6 +29,11 @@ class LogMiddleware
     private $logger;
 
     /**
+     * @var callable
+     */
+    private $bodyFormatter;
+
+    /**
      * GuzzleLogMiddleware constructor.
      * @param callable $next
      * @param LoggerInterface $logger
@@ -37,6 +42,9 @@ class LogMiddleware
     {
         $this->next = $next;
         $this->logger = $logger;
+        $this->bodyFormatter = function (string $body) {
+            return $body;
+        };
     }
 
     /**
@@ -54,14 +62,11 @@ class LogMiddleware
             $data[] = sprintf('HTTP/%s %d %s', $message->getProtocolVersion(), $message->getStatusCode(), $message->getReasonPhrase());
         }
 
-        $data[] = '';
-
         foreach ($message->getHeaders() as $name => $values) {
             $data[] = sprintf('%s: %s', $name, implode(';', $values));
         }
 
-        $data[] = '';
-        $data[] = (string) $message->getBody();
+        $data[] = call_user_func($this->bodyFormatter, (string) $message->getBody());
 
         $this->logger->debug(implode("\n", $data), [
             'id' => $id,
@@ -84,6 +89,14 @@ class LogMiddleware
 
         $fn = $this->next;
         return $fn($request, $options)->then($logResponse, $logResponse);
+    }
+
+    /**
+     * @param callable $formatter
+     */
+    public function setBodyFormatter(callable $formatter)
+    {
+        $this->bodyFormatter = $formatter;
     }
 
 }
