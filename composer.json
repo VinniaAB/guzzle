@@ -9,9 +9,8 @@
     ],
     "require": {
         "php": ">=7.1.0",
-        "ext-curl": "*",
         "psr/log": "~1.0",
-        "guzzlehttp/guzzle": "^6.2"
+        "guzzlehttp/guzzle": "~6.0"
     },
     "require-dev": {
         "phpunit/phpunit": "~6.0"
