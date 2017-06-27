@@ -4,7 +4,7 @@ A collection of helpful guzzle middleware.
 ## `Vinnia\Guzzle\LogMiddleware`
 Logs requests and responses to a PSR-compatible logger.
 
-##`Vinnia\Guzzle\ThrottleMiddleware`
+## `Vinnia\Guzzle\ThrottleMiddleware`
 Throttles the request chain (blocking) with a specified wait amount.
 
 ## Example usage
