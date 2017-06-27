@@ -9,69 +9,63 @@ declare(strict_types = 1);
 
 namespace Vinnia\Guzzle;
 
+use Closure;
+use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Message\RequestInterface;
 
 class ThrottleMiddleware
 {
 
     /**
-     * @var callable
+     * @var int
      */
-    private $nextHandler;
+    private $wait;
 
     /**
-     * @var float
+     * @var int
      */
-    private $threshold;
-
-    /**
-     * @var float
-     */
-    private $previous;
+    private $previous = 0;
 
     /**
      * ThrottleMiddleware constructor.
-     * @param callable $nextHandler
-     * @param float $requestsPerSecond
+     * @param int $wait time in milliseconds
      */
-    function __construct(callable $nextHandler, float $requestsPerSecond)
+    function __construct(int $wait)
     {
-        $this->nextHandler = $nextHandler;
-        $this->threshold = 1e6/$requestsPerSecond;
-        $this->previous = 0;
+        $this->wait = $wait;
     }
 
     /**
-     * Get the current time in microseconds.
+     * Get the current time in milliseconds.
      * Probably won't work on a 32bit computer.
      * @return int
      */
-    private function now(): int
+    public function getTimeInMilliseconds(): int
     {
-        return (int) (microtime(true) * 1e6);
+        return (int) (microtime(true) * 1e3);
     }
 
     private function throttle(): void
     {
-        $diff = $this->now() - $this->previous;
-        if ($this->threshold > $diff) {
-            $sleep = $this->threshold - $diff;
-            usleep((int)$sleep);
+        $diff = $this->getTimeInMilliseconds() - $this->previous;
+        if ($this->wait > $diff) {
+            $sleep = (int)(($this->wait - $diff) * 1e3);
+            usleep($sleep);
         }
     }
 
     /**
-     * @param RequestInterface $request
-     * @param array $options
-     * @return mixed
+     * @param callable $next
+     * @return Closure
      */
-    public function __invoke(RequestInterface $request, array $options)
+    public function __invoke(callable $next): Closure
     {
-        $this->throttle();
-        $next = $this->nextHandler;
-        $result = $next($request, $options);
-        $this->previous = $this->now();
-        return $result;
+        return function (RequestInterface $request, array $options) use ($next): PromiseInterface {
+            $this->throttle();
+            $result = $next($request, $options);
+            $this->previous = $this->getTimeInMilliseconds();
+            return $result;
+        };
     }
 
 }

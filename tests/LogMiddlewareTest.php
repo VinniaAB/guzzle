@@ -17,22 +17,26 @@ use Vinnia\Guzzle\LogMiddleware;
 
 class LogMiddlewareTest extends AbstractTest
 {
-
-    /**
-     * @var int
-     */
-    public $count;
-
     /**
      * @var ClientInterface
      */
     public $client;
 
+    /**
+     * @var LogMiddleware
+     */
+    public $middleware;
+
+    /**
+     * @var string[]
+     */
+    public $messages;
+
     public function setUp()
     {
         parent::setUp();
 
-        $this->count = 0;
+        $this->messages = [];
 
         $countingLogger = new class($this) extends AbstractLogger
         {
@@ -45,14 +49,12 @@ class LogMiddlewareTest extends AbstractTest
 
             public function log($level, $message, array $context = array())
             {
-                $this->other->count += 1;
+                $this->other->messages[] = $message;
             }
         };
 
         $stack = HandlerStack::create($this->handler);
-        $stack->push(function (callable $next) use ($countingLogger) {
-            return new LogMiddleware($next, $countingLogger);
-        });
+        $stack->push($this->middleware = new LogMiddleware($countingLogger));
         $this->client = new Client([
             'handler' => $stack,
         ]);
@@ -62,7 +64,16 @@ class LogMiddlewareTest extends AbstractTest
     {
         $this->client->request('GET', 'http://www.google.com');
 
-        $this->assertEquals(2, $this->count);
+        $this->assertEquals(2, count($this->messages));
+    }
+
+    public function testBodyFormatter()
+    {
+        $this->middleware->setBodyFormatter(function (string $body) {
+            return 'THIS BODY IS FORMATTED';
+        });
+        $this->client->request('GET', 'http://www.google.com');
+        $this->assertTrue(strpos($this->messages[1], 'THIS BODY IS FORMATTED') !== false);
     }
 
 }

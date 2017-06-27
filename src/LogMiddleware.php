@@ -14,15 +14,10 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use Closure;
 
 class LogMiddleware
 {
-
-    /**
-     * @var callable
-     */
-    private $next;
-
     /**
      * @var LoggerInterface
      */
@@ -35,12 +30,10 @@ class LogMiddleware
 
     /**
      * GuzzleLogMiddleware constructor.
-     * @param callable $next
      * @param LoggerInterface $logger
      */
-    public function __construct(callable $next, LoggerInterface $logger)
+    public function __construct(LoggerInterface $logger)
     {
-        $this->next = $next;
         $this->logger = $logger;
         $this->bodyFormatter = function (string $body) {
             return $body;
@@ -73,22 +66,17 @@ class LogMiddleware
         ]);
     }
 
-    /**
-     * @param RequestInterface $request
-     * @param array $options
-     * @return mixed
-     */
-    public function __invoke(RequestInterface $request, array $options): PromiseInterface
+    public function __invoke(callable $next): Closure
     {
-        $id = random_int(0, PHP_INT_MAX);
-        $this->log($request, $id);
-        $logResponse = function (MessageInterface $response) use ($id) {
-            $this->log($response, $id);
-            return $response;
+        return function (RequestInterface $request, array $options) use ($next): PromiseInterface {
+            $id = random_int(0, PHP_INT_MAX);
+            $this->log($request, $id);
+            $logResponse = function (MessageInterface $response) use ($id) {
+                $this->log($response, $id);
+                return $response;
+            };
+            return $next($request, $options)->then($logResponse, $logResponse);
         };
-
-        $fn = $this->next;
-        return $fn($request, $options)->then($logResponse, $logResponse);
     }
 
     /**

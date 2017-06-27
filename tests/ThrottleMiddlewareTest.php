@@ -10,35 +10,48 @@ namespace Vinnia\Guzzle\Tests;
 
 
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\HandlerStack;
 use Vinnia\Guzzle\ThrottleMiddleware;
 
 class ThrottleMiddlewareTest extends AbstractTest
 {
 
-    public function testThrottlesToOneRequestPerSecond()
+    /**
+     * @var ClientInterface
+     */
+    public $client;
+
+    /**
+     * @var ThrottleMiddleware
+     */
+    public $middleware;
+
+    public function setUp()
     {
+        parent::setUp();
+
         $stack = HandlerStack::create($this->handler);
-        $stack->push(function (callable $next) {
-            return new ThrottleMiddleware($next, 0.5);
-        });
-        $client = new Client([
+        $stack->push($this->middleware = new ThrottleMiddleware(500));
+        $this->client = new Client([
             'handler' => $stack,
         ]);
+    }
 
-        $now = microtime(true);
+    public function testDoesntThrottleOnFirstRequest()
+    {
+        $now = $this->middleware->getTimeInMilliseconds();
+        $this->client->request('GET', 'http://google.com');
+        $this->assertLessThan(10, abs($this->middleware->getTimeInMilliseconds() - $now));
+    }
 
-        // first request shouldn't be throttled
-        $client->get('http://google.com');
-
-        $this->assertLessThan(1, microtime(true) - $now);
-
-        $now = microtime(true);
-
-        $client->get('http://google.com');
-
-        $diff = microtime(true) - $now;
-        $this->assertLessThan(0.1, $diff - 2);
+    public function testThrottlesOnSecondRequest()
+    {
+        $this->client->request('GET', 'http://google.com');
+        $now = $this->middleware->getTimeInMilliseconds();
+        $this->client->request('GET', 'http://google.com');
+        $diff = $this->middleware->getTimeInMilliseconds() - $now;
+        $this->assertLessThan(10, abs(500 - $diff));
     }
 
 }
