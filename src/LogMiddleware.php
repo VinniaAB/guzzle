@@ -15,6 +15,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Closure;
+use Psr\Log\LogLevel;
 
 class LogMiddleware
 {
@@ -24,6 +25,11 @@ class LogMiddleware
     private $logger;
 
     /**
+     * @var mixed
+     */
+    private $level;
+
+    /**
      * @var callable
      */
     private $bodyFormatter;
@@ -31,10 +37,12 @@ class LogMiddleware
     /**
      * GuzzleLogMiddleware constructor.
      * @param LoggerInterface $logger
+     * @param mixed $level
      */
-    public function __construct(LoggerInterface $logger)
+    public function __construct(LoggerInterface $logger, $level = LogLevel::DEBUG)
     {
         $this->logger = $logger;
+        $this->level = $level;
         $this->bodyFormatter = function (string $body) {
             return $body;
         };
@@ -61,7 +69,7 @@ class LogMiddleware
 
         $data[] = call_user_func($this->bodyFormatter, (string) $message->getBody());
 
-        $this->logger->debug(implode("\n", $data), [
+        $this->logger->log($this->level, implode("\n", $data), [
             'id' => $id,
         ]);
     }
