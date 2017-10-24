@@ -9,7 +9,10 @@ declare(strict_types = 1);
 
 namespace Vinnia\Guzzle;
 
+use function foo\func;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\PromiseInterface;
+use function GuzzleHttp\Promise\rejection_for;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -79,11 +82,15 @@ class LogMiddleware
         return function (RequestInterface $request, array $options) use ($next): PromiseInterface {
             $id = random_int(0, PHP_INT_MAX);
             $this->log($request, $id);
-            $logResponse = function (MessageInterface $response) use ($id) {
-                $this->log($response, $id);
-                return $response;
-            };
-            return $next($request, $options)->then($logResponse, $logResponse);
+            return $next($request, $options)->then(function (MessageInterface $message) use ($id) {
+                $this->log($message, $id);
+                return $message;
+            }, function ($error) use ($id) {
+                if ($error instanceof RequestException && $response = $error->getResponse()) {
+                    $this->log($response, $id);
+                }
+                return rejection_for($error);
+            });
         };
     }
 

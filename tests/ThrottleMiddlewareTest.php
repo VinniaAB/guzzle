@@ -18,11 +18,6 @@ class ThrottleMiddlewareTest extends AbstractTest
 {
 
     /**
-     * @var ClientInterface
-     */
-    public $client;
-
-    /**
      * @var ThrottleMiddleware
      */
     public $middleware;
@@ -31,25 +26,23 @@ class ThrottleMiddlewareTest extends AbstractTest
     {
         parent::setUp();
 
-        $stack = HandlerStack::create($this->handler);
-        $stack->push($this->middleware = new ThrottleMiddleware(500));
-        $this->client = new Client([
-            'handler' => $stack,
-        ]);
+        $this->middleware = new ThrottleMiddleware(500);
     }
 
     public function testDoesntThrottleOnFirstRequest()
     {
         $now = $this->middleware->getTimeInMilliseconds();
-        $this->client->request('GET', 'http://google.com');
+        $client = $this->getClient($this->successHandler(), [$this->middleware]);
+        $client->request('GET', 'http://google.com');
         $this->assertLessThan(10, abs($this->middleware->getTimeInMilliseconds() - $now));
     }
 
     public function testThrottlesOnSecondRequest()
     {
-        $this->client->request('GET', 'http://google.com');
+        $client = $this->getClient($this->successHandler(), [$this->middleware]);
+        $client->request('GET', 'http://google.com');
         $now = $this->middleware->getTimeInMilliseconds();
-        $this->client->request('GET', 'http://google.com');
+        $client->request('GET', 'http://google.com');
         $diff = $this->middleware->getTimeInMilliseconds() - $now;
         $this->assertLessThan(10, abs(500 - $diff));
     }
