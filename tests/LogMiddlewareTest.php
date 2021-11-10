@@ -1,39 +1,27 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: johan
- * Date: 2017-06-22
- * Time: 14:45
- */
+<?php declare(strict_types=1);
 
 namespace Vinnia\Guzzle\Tests;
-
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\HandlerStack;
-use function GuzzleHttp\Promise\promise_for;
-use function GuzzleHttp\Promise\rejection_for;
+use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
 use Psr\Log\AbstractLogger;
 use Vinnia\Guzzle\LogMiddleware;
 
-class LogMiddlewareTest extends AbstractTest
+final class LogMiddlewareTest extends AbstractTest
 {
-
-    /**
-     * @var LogMiddleware
-     */
-    public $middleware;
+    public ?LogMiddleware $middleware = null;
 
     /**
      * @var string[]
      */
-    public $messages;
+    public array $messages = [];
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -78,7 +66,7 @@ class LogMiddlewareTest extends AbstractTest
     public function testLogsExceptionsThrownOnRequest()
     {
         $client = $this->getClient(function (RequestInterface $request, array $options = []) {
-            return rejection_for(new RequestException('Some Error', $request, new Response(400)));
+            return Create::rejectionFor(new RequestException('Some Error', $request, new Response(400)));
         }, [$this->middleware]);
         try {
             $client->request('GET', 'http://www.google.com');

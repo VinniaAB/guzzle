@@ -1,29 +1,21 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: johan
- * Date: 2017-06-22
- * Time: 14:30
- */
+<?php declare(strict_types=1);
 
 namespace Vinnia\Guzzle\Tests;
-
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\HandlerStack;
-use function GuzzleHttp\Promise\promise_for;
+use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
 abstract class AbstractTest extends TestCase
 {
-
     protected function successHandler(): callable
     {
         return function (RequestInterface $request, array $options = []) {
-            return promise_for(new Response(200));
+            return Create::promiseFor(new Response(200));
         };
     }
 

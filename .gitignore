@@ -24,3 +24,4 @@ composer.phar
 
 .env
 .env-test
+.phpunit.*

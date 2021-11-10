@@ -1,18 +1,10 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: johan
- * Date: 2017-05-24
- * Time: 12:17
- */
-declare(strict_types = 1);
+<?php declare(strict_types = 1);
 
 namespace Vinnia\Guzzle;
 
-use function foo\func;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
-use function GuzzleHttp\Promise\rejection_for;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -20,25 +12,17 @@ use Psr\Log\LoggerInterface;
 use Closure;
 use Psr\Log\LogLevel;
 
-class LogMiddleware
+final class LogMiddleware
 {
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
+    private LoggerInterface $logger;
 
     /**
      * @var mixed
      */
     private $level;
+    private Closure $bodyFormatter;
 
     /**
-     * @var callable
-     */
-    private $bodyFormatter;
-
-    /**
-     * GuzzleLogMiddleware constructor.
      * @param LoggerInterface $logger
      * @param mixed $level
      */
@@ -89,17 +73,14 @@ class LogMiddleware
                 if ($error instanceof RequestException && $response = $error->getResponse()) {
                     $this->log($response, $id);
                 }
-                return rejection_for($error);
+                return Create::rejectionFor($error);
             });
         };
     }
 
-    /**
-     * @param callable $formatter
-     */
-    public function setBodyFormatter(callable $formatter)
+    public function setBodyFormatter(callable $formatter): void
     {
-        $this->bodyFormatter = $formatter;
+        $this->bodyFormatter = Closure::fromCallable($formatter);
     }
 
 }

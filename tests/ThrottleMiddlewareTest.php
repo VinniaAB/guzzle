@@ -1,28 +1,17 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: johan
- * Date: 2017-06-22
- * Time: 14:32
- */
+<?php declare(strict_types=1);
 
 namespace Vinnia\Guzzle\Tests;
-
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\HandlerStack;
 use Vinnia\Guzzle\ThrottleMiddleware;
 
-class ThrottleMiddlewareTest extends AbstractTest
+final class ThrottleMiddlewareTest extends AbstractTest
 {
+    public ?ThrottleMiddleware $middleware = null;
 
-    /**
-     * @var ThrottleMiddleware
-     */
-    public $middleware;
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -46,5 +35,4 @@ class ThrottleMiddlewareTest extends AbstractTest
         $diff = $this->middleware->getTimeInMilliseconds() - $now;
         $this->assertLessThan(10, abs(500 - $diff));
     }
-
 }

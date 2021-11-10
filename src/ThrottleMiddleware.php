@@ -1,11 +1,4 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: johan
- * Date: 2017-03-06
- * Time: 23:35
- */
-declare(strict_types = 1);
+<?php declare(strict_types = 1);
 
 namespace Vinnia\Guzzle;
 
@@ -13,24 +6,12 @@ use Closure;
 use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Message\RequestInterface;
 
-class ThrottleMiddleware
+final class ThrottleMiddleware
 {
+    private int $wait;
+    private int $previous = 0;
 
-    /**
-     * @var int
-     */
-    private $wait;
-
-    /**
-     * @var int
-     */
-    private $previous = 0;
-
-    /**
-     * ThrottleMiddleware constructor.
-     * @param int $wait time in milliseconds
-     */
-    function __construct(int $wait)
+    public function __construct(int $wait)
     {
         $this->wait = $wait;
     }
